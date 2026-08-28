@@ -1312,6 +1312,17 @@ async function loadMoreLeaderboard(key){
   state.lbLoadingMore[key] = false; render();
 }
 
+async function registerUser(name, email){
+  if(!sb) return null;
+  try{
+    const { error } = await sb.rpc("register_user", { p_name: name, p_email: email });
+    if(error) throw error;
+    return true;
+  }catch(e){
+    return null;
+  }
+}
+
 async function saveCategoryScore(entry){
   if(!sb) return null;
   try{
@@ -1978,6 +1989,7 @@ function attachHandlers(){
     loadBestScores(email);
     state.view = "home";
     render();
+    registerUser(name, email);
     try{ var _apf=document.getElementById("app"); if(_apf && _apf.requestFullscreen) _apf.requestFullscreen(); }catch(e){}
     const saved = await loadProgress(email);
     if(saved && Array.isArray(saved.order) && saved.idx < saved.order.length){
