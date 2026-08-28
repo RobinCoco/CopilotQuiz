@@ -38,7 +38,7 @@
   --c-secu:#FF6FAE;
 }
 *{box-sizing:border-box;}
-body{margin:0;}
+html, body{height:100%;margin:0;overflow:hidden;}
 .quiz-root{
   font-family:'Poppins','Inter',system-ui,sans-serif;
   background:var(--bg-deep);
@@ -46,10 +46,14 @@ body{margin:0;}
   border-radius:16px;
   padding:28px 28px 32px;
   max-width:760px;
-  margin:0 auto;
-  position:relative;
+  width:100%;
+  position:fixed;
+  inset:0;
+  margin:auto;
   z-index:0;
-  overflow:hidden;
+  overflow-y:auto;
+  overflow-x:hidden;
+  max-height:100vh;
 }
 .quiz-root::before{
   content:'';
@@ -1313,12 +1317,13 @@ async function loadMoreLeaderboard(key){
 }
 
 async function registerUser(name, email){
-  if(!sb) return null;
+  if(!sb){ console.warn("[quiz] Supabase non configuré : registerUser annulé (clés manquantes)."); return null; }
   try{
     const { error } = await sb.rpc("register_user", { p_name: name, p_email: email });
     if(error) throw error;
     return true;
   }catch(e){
+    console.error("[quiz] registerUser a échoué :", e);
     return null;
   }
 }
