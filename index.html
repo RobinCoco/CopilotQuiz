@@ -812,6 +812,7 @@ const TR = {
     saving:"Enregistrement de votre score au classement...",
     saved:"Votre score a été enregistré dans le classement de ce thème et dans le classement global.",
     practiceNote:"Mode entraînement : seul votre tout premier score sur ce thème compte pour le classement. Cette tentative ne le remplace pas.",
+    saveError:"⚠ Votre score n'a pas pu être enregistré (problème de connexion). Ce thème n'est pas verrouillé : vous pouvez retenter, votre prochain score sera bien pris en compte.",
     scoreLocked:"Score déjà enregistré pour ce thème — vous pouvez rejouer pour vous entraîner, sans changer votre score au classement.", scoreLockedShort:"✓ score enregistré",
     level:(a,b)=>`Niveau ${a}/${b}`,
     correctAnswers:(a,b,p)=>`${a}/${b} bonnes réponses (${p}%)`,
@@ -855,6 +856,7 @@ const TR = {
     saving:"Saving your score to the leaderboard...",
     saved:"Your score has been saved to this theme's leaderboard and to the global leaderboard.",
     practiceNote:"Practice mode: only your very first score on this theme counts for the leaderboard. This attempt won't replace it.",
+    saveError:"⚠ Your score could not be saved (connection issue). This theme isn't locked: you can try again, your next score will be properly recorded.",
     scoreLocked:"Score already recorded for this theme — you can replay for practice, without changing your leaderboard score.", scoreLockedShort:"✓ score locked",
     level:(a,b)=>`Level ${a}/${b}`,
     correctAnswers:(a,b,p)=>`${a}/${b} correct answers (${p}%)`,
@@ -1758,7 +1760,7 @@ function renderResults(){
   else if(overallPct>=70) caption = t('capSolid')(catName(cat));
   else if(overallPct>=50) caption = t('capGood')(catName(cat));
 
-  const saveNote = state.isReplay ? t('practiceNote') : (state.savingScore ? t('saving') : t('saved'));
+  const saveNote = state.saveError ? t('saveError') : (state.isReplay ? t('practiceNote') : (state.savingScore ? t('saving') : t('saved')));
   const tier = getBadgeTier(state.sessionPoints);
 
   return `
@@ -1773,7 +1775,7 @@ function renderResults(){
       <div class="results-score">${state.sessionPoints} pts</div>
       <div class="results-sub">${t('correctAnswers')(totalCorrect, totalCount, overallPct)}</div>
       <div class="results-caption">${caption}</div>
-      <div class="results-caption mono" style="margin-top:10px;font-size:12px;">${saveNote}</div>
+      <div class="results-caption mono" style="margin-top:10px;font-size:12px;${state.saveError?` color:var(--bad);font-weight:600;`:``}">${saveNote}</div>
     </div>
     ${renderGeneralBadge(64)}
     ${renderReviewBox()}
@@ -1952,18 +1954,22 @@ async function nextQuestion(){
     state.view = "results";
     const alreadyLocked = !!(state.bestScores && (state.activeCat in state.bestScores));
     state.isReplay = alreadyLocked;
-    if(!alreadyLocked){
-      updateBestScore(state.activeCat, state.sessionPoints);
-    }
+    state.saveError = false;
     state.myRankLoaded = {}; state.myRank = {};
     render();
     clearProgress();
     if(state.user && !alreadyLocked){
       state.savingScore = true;
+      render();
       const entry = { name: state.user.name, email: state.user.email, category: state.activeCat, score: state.sessionPoints };
-      await saveCategoryScore(entry);
-      state.lbCache[state.activeCat] = await loadCategoryLeaderboard(state.activeCat);
-      state.lbCache["global"] = await loadGlobalLeaderboard();
+      const ok = await saveCategoryScore(entry);
+      if(ok){
+        updateBestScore(state.activeCat, state.sessionPoints);
+        state.lbCache[state.activeCat] = await loadCategoryLeaderboard(state.activeCat);
+        state.lbCache["global"] = await loadGlobalLeaderboard();
+      } else {
+        state.saveError = true;
+      }
       state.savingScore = false;
       if(state.view==="results") render();
     }
