@@ -55,7 +55,10 @@ html, body{height:100% !important;width:100% !important;margin:0 !important;padd
   overflow-x:hidden;
   max-height:100vh !important;
   max-height:100dvh !important;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
 }
+.quiz-root::-webkit-scrollbar{display:none;width:0;height:0;}
 .quiz-root::before{
   content:'';
   position:absolute;
@@ -553,6 +556,36 @@ img, svg, .click-image{max-width:100%;}
 }
 @supports not ((-webkit-background-clip:text) or (background-clip:text)){
   .home-title{color:var(--text-hi) !important;-webkit-text-fill-color:currentColor;}
+}
+
+/* ===== Accueil équilibré : sans aperçu de classement, plus aéré, tient sans défiler ===== */
+.quiz-root{padding:20px 24px 22px;}
+.hero-panel{padding:26px 26px 28px;}
+.hero-panel > *{gap:6px;}
+.title-wrap{margin:0 auto 14px;}
+.byline{font-size:19px;margin-top:-8px;}
+.home-sub{font-size:13.5px;line-height:1.5;margin-top:10px;}
+.general-badge{padding:12px 16px;margin:12px auto 0;gap:12px;}
+.general-badge-name{font-size:15px;}
+.general-badge-meta{font-size:11.5px;}
+.general-badge-label{font-size:10px;}
+.expedition-map{gap:18px 18px;margin:16px 0 14px;}
+.map-node{width:96px;gap:5px;}
+.map-node-ring{width:62px;height:62px;}
+.map-node-icon{width:30px;height:30px;}
+.map-node-step{width:21px;height:21px;font-size:11px;top:-5px;right:10px;}
+.map-node-name{font-size:11px;line-height:1.15;}
+.map-node-count{font-size:9.5px;}
+.map-node-locked{font-size:8.5px;}
+#view-all-leaderboards{margin-top:6px !important;padding:13px;font-size:14px;}
+.footer-links{margin-top:16px;padding-top:14px;gap:16px;}
+@media(min-height:820px){
+  .hero-panel{padding:32px 30px 32px;}
+  .home-sub{font-size:14.5px;margin-top:12px;}
+  .expedition-map{gap:24px 20px;margin:20px 0 18px;}
+  .map-node{width:104px;}
+  .map-node-ring{width:70px;height:70px;}
+  .map-node-icon{width:34px;height:34px;}
 }
 </style>
 </head>
@@ -1427,20 +1460,15 @@ function renderHome(){
 
   return `<div class="hero-panel">
     <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;">
-      <img src="${LOGO_BADGE}" alt="Cocopilot" style="width:46px;" />
+      <img src="${LOGO_BADGE}" alt="Cocopilot" style="width:30px;" />
       <div class="eyebrow">${t('hello')} ${escapeHtml(state.user.name)}</div>
-      <div class="title-wrap"><h1 class="home-title" style="font-size:56px;">${t('title')}</h1><span class="byline">By cocopilot</span></div>
+      <div class="title-wrap"><h1 class="home-title" style="font-size:46px;">${t('title')}</h1><span class="byline">By cocopilot</span></div>
     </div>
     <p class="home-sub" style="text-align:center;margin-left:auto;margin-right:auto;">${t('homeSub')}</p>
     ${getTotalBest() > 0 ? renderGeneralBadge(56) : ""}
     ${resumeBanner}
     ${state.pendingResume ? "" : expeditionMap}
-    <div class="lb-tabs">${["global"].concat(CATS.map(c=>c.id)).map(k=>{
-      const active = k===state.lbTab ? " lb-tab-active" : "";
-      return `<button class="lb-tab${active}" data-lbtab="${k}" title="${lbLabel(k)}">${lbTabLabel(k)}</button>`;
-    }).join("")}</div>
-    ${renderLeaderboardBox(state.lbTab, 6)}
-    <button class="home-btn" id="view-all-leaderboards" style="margin-top:10px;width:100%;">${t('viewAllLb')}</button>
+    <button class="home-btn" id="view-all-leaderboards" style="margin-top:6px;width:100%;">${t('viewAllLb')}</button>
     <div class="footer-links">
       <a href="https://cocopilot.blog/" target="_blank" rel="noopener noreferrer" class="footer-link">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 4 6 4 9s-1.5 6.4-4 9c-2.5-2.6-4-6-4-9s1.5-6.4 4-9z"/></svg>
