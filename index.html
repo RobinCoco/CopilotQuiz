@@ -38,7 +38,7 @@
   --c-secu:#FF6FAE;
 }
 *{box-sizing:border-box;}
-html, body{height:100%;margin:0;overflow:hidden;}
+html, body{height:100% !important;width:100% !important;margin:0 !important;padding:0 !important;overflow:hidden !important;}
 .quiz-root{
   font-family:'Poppins','Inter',system-ui,sans-serif;
   background:var(--bg-deep);
@@ -47,13 +47,14 @@ html, body{height:100%;margin:0;overflow:hidden;}
   padding:28px 28px 32px;
   max-width:760px;
   width:100%;
-  position:fixed;
-  inset:0;
-  margin:auto;
+  position:fixed !important;
+  inset:0 !important;
+  margin:auto !important;
   z-index:0;
   overflow-y:auto;
   overflow-x:hidden;
-  max-height:100vh;
+  max-height:100vh !important;
+  max-height:100dvh !important;
 }
 .quiz-root::before{
   content:'';
