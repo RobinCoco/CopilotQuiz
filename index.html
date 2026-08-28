@@ -300,7 +300,8 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--amber);outline
 .resume-actions .share-btn{padding:11px 14px;font-size:13px;}
 .retry-row{display:flex;gap:10px;margin-top:20px;}
 .retry-btn{flex:1;background:var(--amber);color:#3A1706;border:none;border-radius:10px;padding:14px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;}
-.home-btn{flex:1;background:transparent;color:var(--text-mid);border:1px solid var(--line);border-radius:10px;padding:14px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;}
+.home-btn{flex:1;background:var(--good);color:#fff;border:none;border-radius:10px;padding:14px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;box-shadow:0 6px 16px -4px color-mix(in srgb, var(--good) 55%, transparent);}
+.home-btn:hover{background:color-mix(in srgb, var(--good) 88%, #000);}
 
 .lb-box{margin-top:22px;}
 .lb-title{font-size:11px;font-weight:700;color:var(--text-mid);text-transform:uppercase;letter-spacing:.1em;font-family:'JetBrains Mono',monospace;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
@@ -578,6 +579,12 @@ img, svg, .click-image{max-width:100%;}
 .map-node-count{font-size:9.5px;}
 .map-node-locked{font-size:8.5px;}
 #view-all-leaderboards{margin-top:6px !important;padding:13px;font-size:14px;}
+.home-lb-preview .lb-box{margin-top:12px;}
+.home-lb-preview .lb-title{margin-bottom:6px;font-size:10px;}
+.home-lb-preview .lb-row{padding:7px 12px;margin-bottom:6px;gap:10px;}
+.home-lb-preview .lb-name{font-size:12.5px;}
+.home-lb-preview .lb-score{font-size:12px;}
+.home-lb-preview .lb-rank{font-size:11px;}
 .footer-links{margin-top:16px;padding-top:14px;gap:16px;}
 @media(min-height:820px){
   .hero-panel{padding:32px 30px 32px;}
@@ -1474,6 +1481,7 @@ function renderHome(){
     ${getTotalBest() > 0 ? renderGeneralBadge(56) : ""}
     ${resumeBanner}
     ${state.pendingResume ? "" : expeditionMap}
+    <div class="home-lb-preview">${renderLeaderboardBox("global", 5)}</div>
     <button class="home-btn" id="view-all-leaderboards" style="margin-top:6px;width:100%;">${t('viewAllLb')}</button>
     <div class="footer-links">
       <a href="https://cocopilot.blog/" target="_blank" rel="noopener noreferrer" class="footer-link">
