@@ -144,6 +144,14 @@ button:focus-visible, input:focus-visible{outline:2px solid var(--amber);outline
     inset 0 2px 5px rgba(255,255,255,0.12),
     inset 0 -6px 10px rgba(0,0,0,0.25);
 }
+.map-node-done{
+  position:absolute;bottom:-2px;right:-2px;z-index:3;
+  width:20px;height:20px;border-radius:50%;
+  background:var(--good);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;line-height:1;
+  box-shadow:0 2px 6px rgba(0,0,0,0.4), 0 0 0 3px var(--bg-panel);
+}
 .map-node-icon{width:32px;height:32px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.4));}
 .map-node-dot{width:18px;height:18px;border-radius:50%;}
 .map-node-count{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--text-low);background:rgba(0,0,0,0.25);padding:2px 8px;border-radius:20px;}
@@ -573,6 +581,7 @@ img, svg, .click-image{max-width:100%;}
 .expedition-map{gap:18px 18px;margin:16px 0 14px;}
 .map-node{width:96px;gap:5px;}
 .map-node-ring{width:62px;height:62px;}
+.map-node-done{width:18px;height:18px;font-size:11px;}
 .map-node-icon{width:30px;height:30px;}
 .map-node-step{width:21px;height:21px;font-size:11px;top:-5px;right:10px;}
 .map-node-name{font-size:11px;line-height:1.15;}
@@ -1459,10 +1468,11 @@ function renderHome(){
       ? `<img src="${c.icon}" alt="" class="map-node-icon" />`
       : `<span class="map-node-dot" style="background:${c.color}"></span>`;
     const locked = !!(state.bestScores && (c.id in state.bestScores));
+    const doneBadge = locked ? `<span class="map-node-done" aria-hidden="true">✓</span>` : "";
     const lockedTag = locked ? `<span class="map-node-locked" title="${t('scoreLocked')}">${t('scoreLockedShort')}</span>` : "";
-    return `<button class="map-node" data-cat="${c.id}" title="${catName(c)}" aria-label="${catName(c)}" style="--node-color:${c.color};">
+    return `<button class="map-node" data-cat="${c.id}" title="${catName(c)}" aria-label="${catName(c)}${locked?' — '+t('scoreLocked'):''}" style="--node-color:${c.color};">
       <span class="map-node-step">${i+1}</span>
-      <span class="map-node-ring">${inner}</span>
+      <span class="map-node-ring">${inner}${doneBadge}</span>
       <span class="map-node-name">${catName(c)}</span>
       <span class="map-node-count">${count} ${t('questions')}</span>
       ${lockedTag}
