@@ -948,16 +948,17 @@ function getBadgeTier(score, cap){
   return Object.assign({level: idx+1}, BADGE_TIERS[idx]);
 }
 
-// ---- Meilleurs scores par thème (pour le badge général cumulé) ----
-const BEST_PREFIX = "cocopilot-best-";
-function loadBestScores(email){
-  try{ var raw = localStorage.getItem(BEST_PREFIX + email); state.bestScores = raw ? JSON.parse(raw) : {}; }
-  catch(e){ state.bestScores = {}; }
-}
-function updateBestScore(cat, score){
-  if(!state.bestScores) state.bestScores = {};
-  if(!(cat in state.bestScores) || score > state.bestScores[cat]) state.bestScores[cat] = score;
-  try{ if(state.user) localStorage.setItem(BEST_PREFIX + state.user.email, JSON.stringify(state.bestScores)); }catch(e){}
+// ---- Meilleurs scores par thème (source de vérité unique : Supabase) ----
+async function loadBestScores(email){
+  state.bestScores = {};
+  if(!sb || !email) return;
+  try{
+    const { data, error } = await sb.rpc("get_my_scores", { p_email: email });
+    if(error) throw error;
+    (data || []).forEach(function(row){ state.bestScores[row.category] = row.score; });
+  }catch(e){
+    console.error("[quiz] loadBestScores (Supabase) a échoué :", e);
+  }
 }
 function getTotalBest(){
   var tot = 0;
@@ -1367,15 +1368,18 @@ async function registerUser(name, email){
 async function saveCategoryScore(entry){
   if(!sb) return null;
   try{
-    const { error } = await sb.rpc("submit_score", {
+    const { data, error } = await sb.rpc("submit_score", {
       p_name: entry.name,
       p_email: entry.email,
       p_category: entry.category,
       p_score: entry.score
     });
     if(error) throw error;
-    return true;
+    // true = ce score vient d'être inséré (première tentative réelle)
+    // false = un score existait déjà pour ce thème (conflit géré côté base, ignoré)
+    return !!data;
   }catch(e){
+    console.error("[quiz] saveCategoryScore a échoué :", e);
     return null;
   }
 }
@@ -1952,22 +1956,27 @@ async function nextQuestion(){
     saveProgress();
   } else {
     state.view = "results";
-    const alreadyLocked = !!(state.bestScores && (state.activeCat in state.bestScores));
-    state.isReplay = alreadyLocked;
+    state.isReplay = false;
     state.saveError = false;
     state.myRankLoaded = {}; state.myRank = {};
     render();
     clearProgress();
-    if(state.user && !alreadyLocked){
+    if(state.user){
       state.savingScore = true;
       render();
       const entry = { name: state.user.name, email: state.user.email, category: state.activeCat, score: state.sessionPoints };
-      const ok = await saveCategoryScore(entry);
-      if(ok){
-        updateBestScore(state.activeCat, state.sessionPoints);
+      const result = await saveCategoryScore(entry);
+      if(result === true){
+        // Première tentative réelle : Supabase vient d'enregistrer ce score
+        state.bestScores = state.bestScores || {};
+        state.bestScores[state.activeCat] = state.sessionPoints;
         state.lbCache[state.activeCat] = await loadCategoryLeaderboard(state.activeCat);
         state.lbCache["global"] = await loadGlobalLeaderboard();
+      } else if(result === false){
+        // Un score existait déjà pour ce thème dans Supabase : cette tentative est un entraînement
+        state.isReplay = true;
       } else {
+        // Échec de la requête (réseau, RLS...) : rien n'est verrouillé, on pourra retenter
         state.saveError = true;
       }
       state.savingScore = false;
@@ -2026,7 +2035,8 @@ function attachHandlers(){
       return;
     }
     state.user = {name, email};
-    loadBestScores(email);
+    state.bestScores = {};
+    loadBestScores(email).then(function(){ if(state.view==="home") render(); });
     state.view = "home";
     render();
     registerUser(name, email);
