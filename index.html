@@ -1204,6 +1204,28 @@ function loadImageAsync(src){
   });
 }
 
+function ctxPolygon(ctx, cx, cy, R, sides, rotDeg){
+  const rot=(rotDeg||0)*Math.PI/180; ctx.beginPath();
+  for(let i=0;i<sides;i++){ const a=rot+i*2*Math.PI/sides; const x=cx+R*Math.cos(a), y=cy+R*Math.sin(a); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+  ctx.closePath();
+}
+function ctxStar(ctx, cx, cy, outerR, innerR, points, rotDeg){
+  const rot=(rotDeg||0)*Math.PI/180; ctx.beginPath();
+  for(let i=0;i<points*2;i++){ const r=i%2===0?outerR:innerR; const a=rot+i*Math.PI/points; const x=cx+r*Math.cos(a), y=cy+r*Math.sin(a); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+  ctx.closePath();
+}
+function ctxBadgeFrame(ctx, level, cx, cy, R){
+  if(level===1){ ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); return; }
+  if(level===2) return ctxPolygon(ctx,cx,cy,R,6,-90);
+  if(level===3) return ctxStar(ctx,cx,cy,R,R*0.82,10,-90);
+  if(level===4) return ctxStar(ctx,cx,cy,R,R*0.84,14,-90);
+  if(level===5) return ctxStar(ctx,cx,cy,R,R*0.78,12,-90);
+  if(level===6) return ctxStar(ctx,cx,cy,R,R*0.52,6,-90);
+  if(level===7) return ctxStar(ctx,cx,cy,R,R*0.55,8,-90);
+  if(level===8) return ctxStar(ctx,cx,cy,R,R*0.6,12,-90);
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+}
+
 async function generateShareCard(tier, score){
   const W = 1200, H = 630;
   const canvas = document.createElement("canvas");
@@ -1212,44 +1234,75 @@ async function generateShareCard(tier, score){
 
   try{ await document.fonts.ready; }catch(e){}
 
+  const c0 = tier.ring[0], c1 = tier.ring[tier.ring.length-1];
+
+  // Fond sombre, légèrement teinté par la couleur du grade obtenu
   const bg = ctx.createLinearGradient(0,0,W,H);
   bg.addColorStop(0, "#12241A");
   bg.addColorStop(1, "#1E3327");
   ctx.fillStyle = bg;
   ctx.fillRect(0,0,W,H);
+  const glow = ctx.createRadialGradient(W-150,120,20, W-150,120,560);
+  glow.addColorStop(0, c1 + "35");
+  glow.addColorStop(1, c1 + "00");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0,0,W,H);
 
-  const cx = 250, cy = H/2;
-  const ring = ctx.createLinearGradient(cx-150, cy-150, cx+150, cy+150);
+  const cx = 250, cy = H/2, R = 150;
+
+  // Silhouette propre à chaque grade (cercle, hexagone, fleur, engrenage, étoiles, soleil)
+  const ringGrad = ctx.createLinearGradient(cx-R, cy-R, cx+R, cy+R);
   const stops = tier.ring;
-  stops.forEach((c,i)=> ring.addColorStop(stops.length>1 ? i/(stops.length-1) : 0, c));
-  ctx.beginPath(); ctx.arc(cx,cy,150,0,Math.PI*2); ctx.fillStyle = ring; ctx.fill();
-  ctx.beginPath(); ctx.arc(cx,cy,124,0,Math.PI*2); ctx.fillStyle = "#12241A"; ctx.fill();
+  stops.forEach((c,i)=> ringGrad.addColorStop(stops.length>1 ? i/(stops.length-1) : 0, c));
+  ctxBadgeFrame(ctx, tier.level, cx, cy, R);
+  ctx.fillStyle = ringGrad;
+  ctx.fill();
 
-  try{
-    const parrot = await loadImageAsync(LOGO_BADGE_FACE);
+  // Couronne pour le grade suprême (Maître de la Jungle), mise à l'échelle du médaillon
+  if(tier.level === 8){
+    const k = R/43; // même proportion que le badge SVG d'origine (viewBox 100, rayon 43)
     ctx.save();
-    ctx.beginPath(); ctx.arc(cx,cy,108,0,Math.PI*2); ctx.clip();
-    const scale = Math.max(230/parrot.width, 270/parrot.height);
+    ctx.translate(cx, cy);
+    ctx.fillStyle = ringGrad;
+    ctx.strokeStyle = "#8C2E1B"; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-16*k,-30*k); ctx.lineTo(-13*k,-43*k); ctx.lineTo(-7*k,-35*k);
+    ctx.lineTo(0*k,-48*k); ctx.lineTo(7*k,-35*k); ctx.lineTo(13*k,-43*k); ctx.lineTo(16*k,-30*k);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+
+  // Disque sombre + perroquet teinté (même variante que le badge affiché dans l'app)
+  ctx.beginPath(); ctx.arc(cx,cy,R-26,0,Math.PI*2); ctx.fillStyle = "#12241A"; ctx.fill();
+  try{
+    const faceSrc = (typeof BADGE_FACES !== "undefined" && BADGE_FACES[tier.level-1]) ? BADGE_FACES[tier.level-1] : LOGO_BADGE_FACE;
+    const parrot = await loadImageAsync(faceSrc);
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx,cy,R-32,0,Math.PI*2); ctx.clip();
+    const scale = Math.max(280/parrot.width, 320/parrot.height);
     const iw = parrot.width*scale, ih = parrot.height*scale;
     ctx.drawImage(parrot, cx-iw/2, cy-ih/2+8, iw, ih);
     ctx.restore();
   }catch(e){}
+  ctx.beginPath(); ctx.arc(cx,cy,R-26,0,Math.PI*2);
+  ctx.strokeStyle = ringGrad; ctx.lineWidth = 3; ctx.stroke();
 
+  // Texte (entièrement localisé selon la langue active)
   ctx.fillStyle = "#F3F6F8";
   ctx.font = "700 66px 'Plus Jakarta Sans', sans-serif";
-  ctx.fillText(score + " pts", 460, 290);
+  ctx.fillText(score + " pts", 460, 260);
 
-  ctx.fillStyle = "#E97132";
+  ctx.fillStyle = c1;
   ctx.font = "600 30px 'Plus Jakarta Sans', sans-serif";
-  ctx.fillText(tier.name, 460, 340);
+  ctx.fillText(tierName(tier), 460, 310);
 
-  ctx.fillStyle = "#BBCCBB";
-  ctx.font = "500 24px 'Inter', sans-serif";
-  ctx.fillText("Le grand Quiz Copilot", 460, 395);
+  ctx.fillStyle = "#DDE7DD";
+  ctx.font = "600 26px 'Poppins', sans-serif";
+  ctx.fillText(t('title'), 460, 365);
 
   ctx.fillStyle = "#82A182";
   ctx.font = "400 18px 'JetBrains Mono', monospace";
-  ctx.fillText("cocopilot.blog", 460, 430);
+  ctx.fillText("copilot-quiz.vercel.app", 460, 400);
 
   return canvas.toDataURL("image/png");
 }
